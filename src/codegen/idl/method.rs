@@ -1,5 +1,4 @@
 use capitalize::Capitalize;
-use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::Ident;
 
@@ -55,7 +54,11 @@ impl MethodDefiner for XClassMethodDefinition {
     }
 
     fn body(&self) -> Option<impl ToTokens> {
-        None::<TokenStream>
+        let verbatims = self.method().verbatims().collect::<Vec<_>>();
+
+        (!verbatims.is_empty()).then(|| {
+            quote! { #(#verbatims)* }
+        })
     }
 }
 

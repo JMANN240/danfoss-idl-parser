@@ -40,6 +40,10 @@ impl Method {
         &self.arguments
     }
 
+    pub fn elements(&self) -> &Vec<MethodElement> {
+        &self.elements
+    }
+
     pub fn parse(pair: Pair<Rule>) -> Option<Self> {
         if let Rule::method = pair.as_rule() {
             let mut pairs = pair.into_inner();
@@ -115,49 +119,14 @@ impl Method {
         self.out_arguments().peekable().peek().is_some()
     }
 
-    pub fn out_arguments_type_identifier(&self) -> Ident {
-        format_ident!("{}_OUT_ARGUMENTS_TYPE", &self.identifier)
-    }
-
-    pub fn to_out_arguments_type_tokens(&self) -> TokenStream {
-        let out_arguments_type_identifier = self.out_arguments_type_identifier();
-
-        let out_arguments_type_identifier_fields = self
-            .out_arguments()
-            .map(|out_argument| out_argument.to_field_type_tokens());
-
-        quote! {
-            #[repr(C)]
-            pub struct #out_arguments_type_identifier {
-                #(#out_arguments_type_identifier_fields),*
+    pub fn verbatims(&self) -> impl Iterator<Item = &Verbatim> {
+        self.elements().iter().filter_map(|method_element| {
+            if let MethodElement::Verbatim(verbatim) = method_element {
+                Some(verbatim)
+            } else {
+                None
             }
-        }
-    }
-
-    pub fn to_out_arguments_type_field_tokens(&self) -> TokenStream {
-        let name = &self.identifier;
-
-        let out_arguments_type_identifier = self.out_arguments_type_identifier();
-
-        quote! {
-            pub #name: #out_arguments_type_identifier
-        }
-    }
-
-    pub fn to_out_arguments_type_field_value_tokens(&self) -> TokenStream {
-        let name = &self.identifier;
-
-        let out_arguments_type_identifier = self.out_arguments_type_identifier();
-
-        let out_arguments_type_identifier_field_values = self
-            .out_arguments()
-            .map(|out_argument| out_argument.to_field_value_tokens());
-
-        quote! {
-            #name: #out_arguments_type_identifier {
-                #(#out_arguments_type_identifier_field_values),*
-            }
-        }
+        })
     }
 }
 

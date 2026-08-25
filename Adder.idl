@@ -6,7 +6,7 @@ CCP_STM32FX0X474 Adder 002A
         #process
     >
     {
-        U32 add_count <#get #set #shared>
+        U32 add_count := 123 <#get #set #shared>
         U32 Add(U32 left, U32 right <#out>)
         {
         }
