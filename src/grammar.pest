@@ -1,0 +1,54 @@
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
+
+letter     = _{ ASCII_ALPHA | "_" }
+digit      = _{ ASCII_DIGIT }
+
+dec_int      = @{ "-"? ~ digit+ }
+identifier   = @{ letter ~ (letter | digit)* }
+string       = ${ "\"" ~ inner_string ~ "\"" }
+inner_string = @{ (letter | digit | ":")+ }
+
+interface_type = @{ name }
+name           = @{ letter ~ (letter | digit)* }
+xclass_name           = @{ ASCII_ALPHA_UPPER ~ (letter | digit)* }
+method_name           = @{ ASCII_ALPHA_UPPER ~ (letter | digit)* }
+variable_name           = @{ ASCII_ALPHA_LOWER ~ (letter | digit)* }
+
+interface =  { SOI ~ interface_type ~ name ~ version ~ interface_elements ~ EOI }
+version   = @{ digit{3} ~ letter }
+
+interface_elements =  { "{" ~ interface_element* ~ "}" }
+interface_element  = _{ xclass | insert }
+
+xclass = { "#xclass" ~ xclass_name ~ xclass_properties? ~ xclass_elements }
+
+xclass_properties    =  { "<" ~ xclass_property* ~ ">" }
+xclass_property      =  { xclass_property_name ~ verbatim? }
+xclass_property_name =  { "#init" | "#process" }
+verbatim             =  { "{#" ~ inner_verbatim ~ "#}" }
+inner_verbatim       =  { verbatim_character* }
+verbatim_character   = _{ !"#}" ~ ASCII }
+
+xclass_elements =  { "{" ~ xclass_element+ ~ "}" }
+xclass_element  = _{ method | variable | verbatim }
+
+method                  =  { method_type ~ method_name ~ arg_list ~ method_elements }
+method_type             = ${ variable_type | "void" }
+arg_list                =  { "(" ~ argument ~ ("," ~ argument)* ~ ")" }
+argument                =  { variable_type ~ variable_name ~ init_value? ~ argument_properties? }
+argument_properties       =  { "<" ~ argument_property+ ~ ">" }
+argument_property =  { "#in" | "#out" }
+method_elements         =  { "{" ~ method_element* ~ "}" }
+method_element          = _{ method_variable | verbatim }
+method_variable         =  { variable_type ~ variable_name ~ init_value? ~ argument_properties? }
+
+variable              =  { variable_type ~ variable_name ~ init_value? ~ variable_properties? }
+variable_type         = ${ integer_type | "BOOL" }
+integer_type = @{ ("U" | "S") ~ ("8" | "16" | "32") }
+init_value            =  { ":=" ~ dec_int }
+variable_properties   =  { "<" ~ variable_property+ ~ ">" }
+variable_property     =  { "#shared" | "#get" | "#set" }
+
+insert                =  { "#insert" ~ insert_properties? ~ verbatim? }
+insert_properties       =  { "<" ~ insert_property* ~ ">" }
+insert_property = ${ name ~ "=" ~ string }

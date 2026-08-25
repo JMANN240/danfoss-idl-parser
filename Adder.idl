@@ -1,0 +1,14 @@
+CCP_STM32FX0X474 Adder 002A
+{
+    #xclass Adder
+    <
+        #init {# println!("hi mom"); #}
+        #process
+    >
+    {
+        U32 add_count <#get #set #shared>
+        U32 Add(U32 left, U32 right <#out>)
+        {
+        }
+    }
+}
