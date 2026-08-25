@@ -109,27 +109,27 @@ impl MethodDefiner for XClassPropertyMethodDefinition {
 
     fn body(&self) -> Option<impl ToTokens> {
         self.xclass_property()
-            .verbatim()
+            .maybe_verbatim()
             .map(ToTokens::to_token_stream)
     }
 }
 
 pub struct XClassVariableGetMethodDefinition {
     xclass: XClass,
-    varaible: Variable,
+    variable: Variable,
 }
 
 impl XClassVariableGetMethodDefinition {
-    pub fn new(xclass: XClass, varaible: Variable) -> Self {
-        Self { xclass, varaible }
+    pub fn new(xclass: XClass, variable: Variable) -> Self {
+        Self { xclass, variable }
     }
 
     pub fn xclass(&self) -> &XClass {
         &self.xclass
     }
 
-    pub fn varaible(&self) -> &Variable {
-        &self.varaible
+    pub fn variable(&self) -> &Variable {
+        &self.variable
     }
 }
 
@@ -138,7 +138,7 @@ impl MethodDefiner for XClassVariableGetMethodDefinition {
         format_ident!(
             "{}_{}GET",
             self.xclass().identifier(),
-            self.varaible()
+            self.variable()
                 .identifier()
                 .to_string()
                 .capitalize_first_only(),
@@ -152,7 +152,7 @@ impl MethodDefiner for XClassVariableGetMethodDefinition {
     }
 
     fn return_type_tokens(&self) -> impl ToTokens {
-        self.varaible().variable_type()
+        self.variable().variable_type()
     }
 
     fn arguments(&self) -> Vec<ArgumentDefinition> {
@@ -160,9 +160,9 @@ impl MethodDefiner for XClassVariableGetMethodDefinition {
     }
 
     fn body(&self) -> Option<impl ToTokens> {
-        let identifier = &self.varaible().identifier();
+        let identifier = &self.variable().identifier();
 
-        Some(if self.varaible().is_shared() {
+        Some(if self.variable().is_shared() {
             quote! { self.SHARED.#identifier }
         } else {
             quote! { self.#identifier }
@@ -172,20 +172,20 @@ impl MethodDefiner for XClassVariableGetMethodDefinition {
 
 pub struct XClassVariableSetMethodDefinition {
     xclass: XClass,
-    varaible: Variable,
+    variable: Variable,
 }
 
 impl XClassVariableSetMethodDefinition {
-    pub fn new(xclass: XClass, varaible: Variable) -> Self {
-        Self { xclass, varaible }
+    pub fn new(xclass: XClass, variable: Variable) -> Self {
+        Self { xclass, variable }
     }
 
     pub fn xclass(&self) -> &XClass {
         &self.xclass
     }
 
-    pub fn varaible(&self) -> &Variable {
-        &self.varaible
+    pub fn variable(&self) -> &Variable {
+        &self.variable
     }
 }
 
@@ -194,7 +194,7 @@ impl MethodDefiner for XClassVariableSetMethodDefinition {
         format_ident!(
             "{}_{}SET",
             self.xclass().identifier(),
-            self.varaible()
+            self.variable()
                 .identifier()
                 .to_string()
                 .capitalize_first_only(),
@@ -212,19 +212,19 @@ impl MethodDefiner for XClassVariableSetMethodDefinition {
     }
 
     fn arguments(&self) -> Vec<ArgumentDefinition> {
-        let identifier = self.varaible().identifier();
-        let varaible_type_tokens = self.varaible().variable_type();
+        let identifier = self.variable().identifier();
+        let variable_type_tokens = self.variable().variable_type();
 
         vec![ArgumentDefinition::new(
             identifier.clone(),
-            varaible_type_tokens,
+            variable_type_tokens,
         )]
     }
 
     fn body(&self) -> Option<impl ToTokens> {
-        let identifier = self.varaible().identifier().clone();
+        let identifier = self.variable().identifier().clone();
 
-        let value_tokens = if self.varaible().is_shared() {
+        let value_tokens = if self.variable().is_shared() {
             quote! { self.SHARED.#identifier }
         } else {
             quote! { self.#identifier }

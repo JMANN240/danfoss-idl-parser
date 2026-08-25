@@ -6,18 +6,15 @@ use syn::Ident;
 use crate::{
     Rule,
     ast::xclass::VariableType,
-    codegen::rust::{
-        definition::StructFieldDefiner,
-        instantiation::StructFieldInstantiator,
-    },
+    codegen::rust::{definition::StructFieldDefiner, instantiation::StructFieldInstantiator},
 };
 
 #[derive(Debug, Clone)]
 pub struct Variable {
-    pub variable_type: VariableType,
-    pub identifier: Ident,
-    pub maybe_initial_value: Option<String>,
-    pub maybe_properties: Option<Vec<VariableProperty>>,
+    variable_type: VariableType,
+    identifier: Ident,
+    maybe_initial_value: Option<String>,
+    maybe_properties: Option<Vec<VariableProperty>>,
 }
 
 impl Variable {
@@ -25,8 +22,16 @@ impl Variable {
         if let Rule::variable = pair.as_rule() {
             let mut pairs = pair.into_inner();
 
-            let variable_type = VariableType::parse(pairs.next().unwrap()).unwrap();
-            let identifier = format_ident!("{}", pairs.next().unwrap().to_string());
+            let variable_type =
+                VariableType::parse(pairs.next().expect("variable always has variable_type"))
+                    .expect("could not parse variable_type");
+            let identifier = format_ident!(
+                "{}",
+                pairs
+                    .next()
+                    .expect("variable always has variable_name")
+                    .to_string()
+            );
 
             let mut variable = Self {
                 variable_type,
@@ -38,17 +43,17 @@ impl Variable {
             if let Some(initial_value_or_properties) = pairs.next() {
                 match initial_value_or_properties.as_rule() {
                     Rule::init_value => {
-                        let initial_value = initial_value_or_properties.to_string();
-                        variable.maybe_initial_value = Some(initial_value);
+                        variable.maybe_initial_value =
+                            Some(initial_value_or_properties.to_string());
 
                         if let Some(properties) = pairs.next() {
                             variable.maybe_properties =
-                                Some(Self::parse_properties(properties).unwrap());
+                                Some(Self::parse_properties(properties).expect("could not parse variable_properties"));
                         }
                     }
                     Rule::variable_properties => {
                         variable.maybe_properties =
-                            Some(Self::parse_properties(initial_value_or_properties).unwrap());
+                            Some(Self::parse_properties(initial_value_or_properties).expect("could not parse variable_properties"));
                     }
                     _ => unreachable!(),
                 }
@@ -64,7 +69,7 @@ impl Variable {
         if let Rule::variable_properties = pair.as_rule() {
             Some(
                 pair.into_inner()
-                    .map(|pair| VariableProperty::parse(pair).unwrap())
+                    .map(|pair| VariableProperty::parse(pair).expect("could not parse variable_property"))
                     .collect(),
             )
         } else {
@@ -143,10 +148,14 @@ impl VariableProperty {
 
 impl IdentFragment for VariableProperty {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}", match self {
-            Self::Get => "GET",
-            Self::Set => "SET",
-            Self::Shared => unreachable!(),
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Get => "GET",
+                Self::Set => "SET",
+                Self::Shared => unreachable!(),
+            }
+        )
     }
 }

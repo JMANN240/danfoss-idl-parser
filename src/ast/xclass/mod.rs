@@ -15,9 +15,9 @@ pub mod variable;
 
 #[derive(Debug, Clone)]
 pub struct XClass {
-    pub identifier: Ident,
-    pub properties: Option<Vec<XClassProperty>>,
-    pub elements: Vec<XClassElement>,
+    identifier: Ident,
+    maybe_properties: Option<Vec<XClassProperty>>,
+    elements: Vec<XClassElement>,
 }
 
 impl XClass {
@@ -25,25 +25,45 @@ impl XClass {
         if let Rule::xclass = pair.as_rule() {
             let mut pairs = pair.into_inner();
 
-            let identifier = format_ident!("{}", pairs.next().unwrap().to_string());
+            let identifier = format_ident!(
+                "{}",
+                pairs
+                    .next()
+                    .expect("xclass always has xclass_name")
+                    .to_string()
+            );
 
-            let mut properties_or_elements = pairs.next().unwrap();
-
-            let properties = if let Rule::xclass_properties = properties_or_elements.as_rule() {
-                let properties = Self::parse_properties(properties_or_elements).unwrap();
-                properties_or_elements = pairs.next().unwrap();
-                Some(properties)
-            } else {
-                None
+            let mut xclass = Self {
+                identifier,
+                maybe_properties: None,
+                elements: vec![],
             };
 
-            let elements = Self::parse_elements(properties_or_elements).unwrap();
+            let properties_or_elements = pairs
+                .next()
+                .expect("xclass always has xclass_properties or xclass_elements");
 
-            Some(Self {
-                identifier,
-                properties,
-                elements,
-            })
+            match properties_or_elements.as_rule() {
+                Rule::xclass_properties => {
+                    xclass.maybe_properties = Some(
+                        Self::parse_properties(properties_or_elements)
+                            .expect("could not parse xclass_properties"),
+                    );
+                    xclass.elements = Self::parse_elements(
+                        pairs
+                            .next()
+                            .expect("xclass_properties is always followed by xclass_elements"),
+                    )
+                    .expect("could not parse xclass_elements");
+                }
+                Rule::xclass_elements => {
+                    xclass.elements = Self::parse_elements(properties_or_elements)
+                        .expect("could not parse xclass_elements");
+                }
+                _ => unreachable!(),
+            };
+
+            Some(xclass)
         } else {
             None
         }
@@ -53,7 +73,9 @@ impl XClass {
         if let Rule::xclass_properties = pair.as_rule() {
             Some(
                 pair.into_inner()
-                    .map(|pair| XClassProperty::parse(pair).unwrap())
+                    .map(|pair| {
+                        XClassProperty::parse(pair).expect("coult not parse xclass_property")
+                    })
                     .collect(),
             )
         } else {
@@ -65,7 +87,7 @@ impl XClass {
         if let Rule::xclass_elements = pair.as_rule() {
             Some(
                 pair.into_inner()
-                    .map(|pair| XClassElement::parse(pair).unwrap())
+                    .map(|pair| XClassElement::parse(pair).expect("could not parse xclass_element"))
                     .collect(),
             )
         } else {
@@ -73,14 +95,26 @@ impl XClass {
         }
     }
 
+    pub fn identifier(&self) -> &Ident {
+        &self.identifier
+    }
+
+    pub fn maybe_properties(&self) -> Option<&Vec<XClassProperty>> {
+        self.maybe_properties.as_ref()
+    }
+
+    pub fn elements(&self) -> &Vec<XClassElement> {
+        &self.elements
+    }
+
     pub fn properties_of_name(
         &self,
         xlcass_property_name: XClassPropertyName,
     ) -> Option<impl Iterator<Item = &XClassProperty>> {
-        self.properties.as_ref().map(move |xclass_properties| {
+        self.maybe_properties().map(move |xclass_properties| {
             xclass_properties
                 .iter()
-                .filter(move |xclass_property| xclass_property.name == xlcass_property_name)
+                .filter(move |xclass_property| xclass_property.name() == xlcass_property_name)
         })
     }
 
@@ -101,7 +135,7 @@ impl XClass {
     }
 
     pub fn methods(&self) -> impl Iterator<Item = &Method> {
-        self.elements.iter().filter_map(|xclass_element| {
+        self.elements().iter().filter_map(|xclass_element| {
             if let XClassElement::Method(method) = xclass_element {
                 Some(method)
             } else {
@@ -115,7 +149,7 @@ impl XClass {
     }
 
     pub fn variables(&self) -> impl Iterator<Item = &Variable> {
-        self.elements.iter().filter_map(|xclass_element| {
+        self.elements().iter().filter_map(|xclass_element| {
             if let XClassElement::Variable(variable) = xclass_element {
                 Some(variable)
             } else {
@@ -131,16 +165,12 @@ impl XClass {
     pub fn instance_variables(&self) -> impl Iterator<Item = &Variable> {
         self.variables().filter(|variable| !variable.is_shared())
     }
-
-    pub fn identifier(&self) -> Ident {
-        format_ident!("{}", &self.identifier)
-    }
 }
 
 #[derive(Debug, Clone)]
 pub struct XClassProperty {
     name: XClassPropertyName,
-    verbatim: Option<Verbatim>,
+    maybe_verbatim: Option<Verbatim>,
 }
 
 impl XClassProperty {
@@ -148,11 +178,21 @@ impl XClassProperty {
         if let Rule::xclass_property = pair.as_rule() {
             let mut pairs = pair.into_inner();
 
-            let name = XClassPropertyName::parse(pairs.next().unwrap()).unwrap();
+            let name = XClassPropertyName::parse(
+                pairs
+                    .next()
+                    .expect("xclass_property always has xclass_property_name"),
+            )
+            .expect("could not parse xclass_property_name");
 
-            let verbatim = pairs.next().map(|pair| Verbatim::parse(pair).unwrap());
+            let maybe_verbatim = pairs
+                .next()
+                .map(|pair| Verbatim::parse(pair).expect("could not parse verbatim"));
 
-            Some(Self { name, verbatim })
+            Some(Self {
+                name,
+                maybe_verbatim,
+            })
         } else {
             None
         }
@@ -162,8 +202,8 @@ impl XClassProperty {
         self.name
     }
 
-    pub fn verbatim(&self) -> Option<&Verbatim> {
-        self.verbatim.as_ref()
+    pub fn maybe_verbatim(&self) -> Option<&Verbatim> {
+        self.maybe_verbatim.as_ref()
     }
 }
 
@@ -212,7 +252,7 @@ impl XClassElement {
         match pair.as_rule() {
             Rule::method => Method::parse(pair).map(Self::Method),
             Rule::variable => Variable::parse(pair).map(Self::Variable),
-            Rule::verbatim => Verbatim::parse(pair).map(Self::Verbatim),
+            Rule::verbatim => unimplemented!("xclass verbatim elements are not implemented"), // Verbatim::parse(pair).map(Self::Verbatim),
             _ => None,
         }
     }

@@ -1,5 +1,3 @@
-use std::convert::identity;
-
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 
@@ -165,7 +163,7 @@ impl XClassDefinition {
                 }),
             ]
             .into_iter()
-            .filter_map(identity)
+            .flatten()
         })
     }
 }
