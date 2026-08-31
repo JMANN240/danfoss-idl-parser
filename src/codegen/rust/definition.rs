@@ -87,7 +87,6 @@ pub trait StructFieldDefiner {
 
 pub struct MethodDefinition {
     method_identifier: Ident,
-    self_type_tokens: TokenStream,
     return_type_tokens: TokenStream,
     arguments: Vec<ArgumentDefinition>,
     body: Option<TokenStream>,
@@ -96,14 +95,12 @@ pub struct MethodDefinition {
 impl MethodDefinition {
     pub fn new(
         method_identifier: Ident,
-        self_type_tokens: impl ToTokens,
         return_type_tokens: impl ToTokens,
         arguments: Vec<ArgumentDefinition>,
         body: Option<impl ToTokens>,
     ) -> Self {
         Self {
             method_identifier,
-            self_type_tokens: self_type_tokens.to_token_stream(),
             return_type_tokens: return_type_tokens.to_token_stream(),
             arguments,
             body: body.as_ref().map(ToTokens::to_token_stream),
@@ -112,10 +109,6 @@ impl MethodDefinition {
 
     pub fn method_identifier(&self) -> &Ident {
         &self.method_identifier
-    }
-
-    pub fn self_type_tokens(&self) -> &TokenStream {
-        &self.self_type_tokens
     }
 
     pub fn return_type_tokens(&self) -> &TokenStream {
@@ -134,7 +127,6 @@ impl MethodDefinition {
 impl ToTokens for MethodDefinition {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let method_identifier = self.method_identifier();
-        let self_type_tokens = self.self_type_tokens();
         let return_type_tokens = self.return_type_tokens();
         let arguments = self.arguments();
 
@@ -147,7 +139,6 @@ impl ToTokens for MethodDefinition {
         tokens.extend(quote! {
             #[unsafe(no_mangle)]
             pub extern "C" fn #method_identifier(
-                self: #self_type_tokens,
                 #(#arguments),*
             ) -> #return_type_tokens {
                 #body
@@ -158,7 +149,6 @@ impl ToTokens for MethodDefinition {
 
 pub trait MethodDefiner {
     fn method_identifier(&self) -> Ident;
-    fn self_type_tokens(&self) -> impl ToTokens;
     fn return_type_tokens(&self) -> impl ToTokens;
     fn arguments(&self) -> Vec<ArgumentDefinition>;
     fn body(&self) -> Option<impl ToTokens>;
@@ -166,7 +156,6 @@ pub trait MethodDefiner {
     fn to_method_definition(&self) -> MethodDefinition {
         MethodDefinition::new(
             self.method_identifier(),
-            self.self_type_tokens(),
             self.return_type_tokens(),
             self.arguments(),
             self.body(),

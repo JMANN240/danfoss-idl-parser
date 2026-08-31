@@ -1,3 +1,4 @@
+use heck::ToSnakeCase;
 use pest::iterators::Pair;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
@@ -162,7 +163,7 @@ impl StructInstantiator for Method {
 
 impl StructFieldDefiner for Method {
     fn identifier(&self) -> Ident {
-        self.identifier().clone()
+        format_ident!("{}", self.identifier().to_string().to_snake_case())
     }
 
     fn type_tokens(&self) -> impl ToTokens {
@@ -172,7 +173,7 @@ impl StructFieldDefiner for Method {
 
 impl StructFieldInstantiator for Method {
     fn identifier(&self) -> Ident {
-        self.identifier().clone()
+        format_ident!("{}", self.identifier().to_string().to_snake_case())
     }
 
     fn value_tokens(&self) -> impl ToTokens {

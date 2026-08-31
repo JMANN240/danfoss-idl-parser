@@ -2,7 +2,13 @@ use quote::{ToTokens, format_ident, quote};
 use syn::Ident;
 
 use crate::{
-    ast::xclass::XClass, codegen::rust::{definition::{StructDefiner, StructFieldDefiner, StructFieldDefinition}, instantiation::{StaticAssigner, StructFieldInstantiation, StructFieldInstantiator, StructInstantiator}},
+    ast::xclass::XClass,
+    codegen::rust::{
+        definition::{StructDefiner, StructFieldDefiner, StructFieldDefinition},
+        instantiation::{
+            StaticAssigner, StructFieldInstantiation, StructFieldInstantiator, StructInstantiator,
+        },
+    },
 };
 
 pub struct SharedStruct {
@@ -26,6 +32,10 @@ impl SharedStruct {
         &self.xclass
     }
 
+    pub fn init_flag_field_identifier() -> Ident {
+        format_ident!("init_flag")
+    }
+
     pub fn type_identifier(&self) -> Ident {
         format_ident!(
             "{}_{:X}_SHARED_TYPE",
@@ -44,7 +54,7 @@ impl SharedStruct {
 
     pub fn struct_field_definitions(&self) -> impl Iterator<Item = StructFieldDefinition> {
         [StructFieldDefinition::new(
-            format_ident!("INITFLAG"),
+            Self::init_flag_field_identifier(),
             quote! { u32 },
         )]
         .into_iter()
@@ -88,7 +98,7 @@ impl StructInstantiator for SharedStruct {
             .map(StructFieldInstantiator::to_struct_field_instantiation);
 
         [StructFieldInstantiation::new(
-            format_ident!("INITFLAG"),
+            Self::init_flag_field_identifier(),
             quote! { 0 },
         )]
         .into_iter()

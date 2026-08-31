@@ -1,10 +1,14 @@
 use capitalize::Capitalize;
+use heck::ToSnakeCase;
 use quote::{ToTokens, format_ident, quote};
 use syn::Ident;
 
 use crate::{
     ast::xclass::{XClass, XClassProperty, method::Method, variable::Variable},
-    codegen::rust::definition::{ArgumentDefiner, ArgumentDefinition, MethodDefiner},
+    codegen::{
+        idl::instance_struct::InstanceStruct,
+        rust::definition::{ArgumentDefiner, ArgumentDefinition, MethodDefiner},
+    },
 };
 
 pub struct XClassMethodDefinition {
@@ -35,22 +39,25 @@ impl MethodDefiner for XClassMethodDefinition {
         )
     }
 
-    fn self_type_tokens(&self) -> impl ToTokens {
-        let self_type_identifier = self.xclass().identifier();
-
-        quote! { *mut #self_type_identifier }
-    }
-
     fn return_type_tokens(&self) -> impl ToTokens {
         self.method().method_type()
     }
 
     fn arguments(&self) -> Vec<ArgumentDefinition> {
-        self.method()
-            .arguments()
-            .iter()
-            .map(ArgumentDefiner::to_argument_definition)
-            .collect()
+        let self_type_identifier = self.xclass().identifier();
+
+        [ArgumentDefinition::new(
+            format_ident!("{}", self_type_identifier.to_string().to_snake_case()),
+            quote! { *mut #self_type_identifier },
+        )]
+        .into_iter()
+        .chain(
+            self.method()
+                .arguments()
+                .iter()
+                .map(ArgumentDefiner::to_argument_definition),
+        )
+        .collect()
     }
 
     fn body(&self) -> Option<impl ToTokens> {
@@ -93,18 +100,17 @@ impl MethodDefiner for XClassPropertyMethodDefinition {
         )
     }
 
-    fn self_type_tokens(&self) -> impl ToTokens {
-        let self_type_identifier = self.xclass().identifier();
-
-        quote! { *mut #self_type_identifier }
-    }
-
     fn return_type_tokens(&self) -> impl ToTokens {
         quote! { () }
     }
 
     fn arguments(&self) -> Vec<ArgumentDefinition> {
-        vec![]
+        let self_type_identifier = self.xclass().identifier();
+
+        vec![ArgumentDefinition::new(
+            format_ident!("{}", self_type_identifier.to_string().to_snake_case()),
+            quote! { *mut #self_type_identifier },
+        )]
     }
 
     fn body(&self) -> Option<impl ToTokens> {
@@ -131,6 +137,17 @@ impl XClassVariableGetMethodDefinition {
     pub fn variable(&self) -> &Variable {
         &self.variable
     }
+
+    pub fn self_type_identifier(&self) -> &Ident {
+        self.xclass().identifier()
+    }
+
+    pub fn self_instance_identifier(&self) -> Ident {
+        format_ident!(
+            "{}",
+            self.self_type_identifier().to_string().to_snake_case()
+        )
+    }
 }
 
 impl MethodDefiner for XClassVariableGetMethodDefinition {
@@ -145,27 +162,46 @@ impl MethodDefiner for XClassVariableGetMethodDefinition {
         )
     }
 
-    fn self_type_tokens(&self) -> impl ToTokens {
-        let self_type_identifier = self.xclass().identifier();
-
-        quote! { *mut #self_type_identifier }
-    }
-
     fn return_type_tokens(&self) -> impl ToTokens {
         self.variable().variable_type()
     }
 
     fn arguments(&self) -> Vec<ArgumentDefinition> {
-        vec![]
+        let self_type_identifier = self.self_type_identifier();
+
+        vec![ArgumentDefinition::new(
+            self.self_instance_identifier(),
+            quote! { *mut #self_type_identifier },
+        )]
     }
 
     fn body(&self) -> Option<impl ToTokens> {
+        let self_instance_identifier = self.self_instance_identifier();
+
+        let self_instance_assignment = quote! {
+            let #self_instance_identifier = unsafe { &mut *#self_instance_identifier }
+        };
+
         let identifier = &self.variable().identifier();
 
         Some(if self.variable().is_shared() {
-            quote! { self.SHARED.#identifier }
+            let shared_field_identifier = InstanceStruct::shared_field_identifier();
+
+            let shared_field_assignment = quote! {
+                let #shared_field_identifier = unsafe { &mut *#self_instance_identifier.#shared_field_identifier }
+            };
+
+            quote! {
+                #self_instance_assignment;
+                #shared_field_assignment;
+                #shared_field_identifier.#identifier
+            }
         } else {
-            quote! { self.#identifier }
+
+            quote! {
+                #self_instance_assignment;
+                #self_instance_identifier.#identifier
+            }
         })
     }
 }
@@ -187,6 +223,17 @@ impl XClassVariableSetMethodDefinition {
     pub fn variable(&self) -> &Variable {
         &self.variable
     }
+
+    pub fn self_type_identifier(&self) -> &Ident {
+        self.xclass().identifier()
+    }
+
+    pub fn self_instance_identifier(&self) -> Ident {
+        format_ident!(
+            "{}",
+            self.self_type_identifier().to_string().to_snake_case()
+        )
+    }
 }
 
 impl MethodDefiner for XClassVariableSetMethodDefinition {
@@ -201,35 +248,51 @@ impl MethodDefiner for XClassVariableSetMethodDefinition {
         )
     }
 
-    fn self_type_tokens(&self) -> impl ToTokens {
-        let self_type_identifier = self.xclass().identifier();
-
-        quote! { *mut #self_type_identifier }
-    }
-
     fn return_type_tokens(&self) -> impl ToTokens {
         quote! { () }
     }
 
     fn arguments(&self) -> Vec<ArgumentDefinition> {
+        let self_type_identifier = self.self_type_identifier();
         let identifier = self.variable().identifier();
         let variable_type_tokens = self.variable().variable_type();
 
-        vec![ArgumentDefinition::new(
-            identifier.clone(),
-            variable_type_tokens,
-        )]
+        vec![
+            ArgumentDefinition::new(
+                self.self_instance_identifier(),
+                quote! { *mut #self_type_identifier },
+            ),
+            ArgumentDefinition::new(identifier.clone(), variable_type_tokens),
+        ]
     }
 
     fn body(&self) -> Option<impl ToTokens> {
-        let identifier = self.variable().identifier().clone();
+        let self_instance_identifier = self.self_instance_identifier();
 
-        let value_tokens = if self.variable().is_shared() {
-            quote! { self.SHARED.#identifier }
-        } else {
-            quote! { self.#identifier }
+        let self_instance_assignment = quote! {
+            let #self_instance_identifier = unsafe { &mut *#self_instance_identifier }
         };
 
-        Some(quote! { #value_tokens = #identifier; })
+        let identifier = &self.variable().identifier();
+
+        Some(if self.variable().is_shared() {
+            let shared_field_identifier = InstanceStruct::shared_field_identifier();
+
+            let shared_field_assignment = quote! {
+                let #shared_field_identifier = unsafe { &mut *#self_instance_identifier.#shared_field_identifier }
+            };
+
+            quote! {
+                #self_instance_assignment;
+                #shared_field_assignment;
+                #shared_field_identifier.#identifier = #identifier;
+            }
+        } else {
+
+            quote! {
+                #self_instance_assignment;
+                #self_instance_identifier.#identifier = #identifier;
+            }
+        })
     }
 }

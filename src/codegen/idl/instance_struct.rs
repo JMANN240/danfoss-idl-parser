@@ -29,6 +29,10 @@ impl InstanceStruct {
     pub fn xclass(&self) -> &XClass {
         &self.xclass
     }
+
+    pub fn shared_field_identifier() -> Ident {
+        format_ident!("shared")
+    }
 }
 
 impl StructDefiner for InstanceStruct {
@@ -42,9 +46,9 @@ impl StructDefiner for InstanceStruct {
         let shared_struct_type_identifier = shared_struct.type_identifier();
 
         [
-            StructFieldDefinition::new(format_ident!("RESERVED"), quote! { u32 }),
+            StructFieldDefinition::new(format_ident!("reserved"), quote! { u32 }),
             StructFieldDefinition::new(
-                format_ident!("SHARED"),
+                Self::shared_field_identifier(),
                 quote! { *mut #shared_struct_type_identifier },
             ),
         ]
