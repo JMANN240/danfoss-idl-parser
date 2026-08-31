@@ -1,5 +1,7 @@
 [package]
 name = "danfoss-idl-parser"
+description = "A parsing and codegen utility library for Danfoss IDL files."
+license = "MIT OR Apache-2.0"
 version = "0.1.0"
 edition = "2024"
 
