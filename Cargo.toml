@@ -1,5 +1,5 @@
 [package]
-name = "idl-parser"
+name = "danfoss-idl-parser"
 version = "0.1.0"
 edition = "2024"
 
