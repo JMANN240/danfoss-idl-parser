@@ -79,6 +79,26 @@ impl Interface {
     pub fn interface_elements(&self) -> &Vec<InterfaceElement> {
         &self.interface_elements
     }
+
+    pub fn xclasses(&self) -> impl Iterator<Item = &XClass> {
+        self.interface_elements().iter().filter_map(|interface_element| {
+            if let InterfaceElement::XClass(xclass) = interface_element {
+                Some(xclass)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn inserts(&self) -> impl Iterator<Item = &Insert> {
+        self.interface_elements().iter().filter_map(|interface_element| {
+            if let InterfaceElement::Insert(insert) = interface_element {
+                Some(insert)
+            } else {
+                None
+            }
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -91,7 +111,7 @@ impl InterfaceElement {
     pub fn parse(pair: Pair<Rule>) -> Option<Self> {
         match pair.as_rule() {
             Rule::xclass => XClass::parse(pair).map(Self::XClass),
-            Rule::insert => unimplemented!("insert elements are not implemented"), // Insert::parse(pair).map(Self::Insert),
+            Rule::insert => Insert::parse(pair).map(Self::Insert),
             _ => None,
         }
     }

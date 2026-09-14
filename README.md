@@ -20,6 +20,7 @@ Thus, `danfoss-idl-parser` was born. Take in a `.idl` file, get matching Rust co
 
 - XClass
     - Properties
+    - Verbatims
     - Variables
         - Initial Values
         - Properties
@@ -29,7 +30,10 @@ Thus, `danfoss-idl-parser` was born. Take in a `.idl` file, get matching Rust co
             - Properties
         - Verbatim Elements
 
+## Partially Supported IDL Features
+
+- Insert Elements
+
 ## Unsupported IDL Features
 
 - XClass Method Variables
-- Insert Elements
