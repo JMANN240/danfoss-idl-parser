@@ -2,8 +2,9 @@
 name = "danfoss-idl-parser"
 description = "A parsing and codegen utility library for Danfoss IDL files."
 license = "MIT OR Apache-2.0"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
+repository = "https://github.com/JMANN240/danfoss-idl-parser"
 
 [dependencies]
 capitalize = "0.3.4"

@@ -16,7 +16,7 @@ checksum = "bba18ee93d577a8428902687bcc2b6b45a56b1981a1f6d779731c86cc4c5db18"
 
 [[package]]
 name = "danfoss-idl-parser"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "capitalize",
  "claims",
