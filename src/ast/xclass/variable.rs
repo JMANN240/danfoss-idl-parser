@@ -47,13 +47,17 @@ impl Variable {
                             Some(initial_value_or_properties.to_string());
 
                         if let Some(properties) = pairs.next() {
-                            variable.maybe_properties =
-                                Some(Self::parse_properties(properties).expect("could not parse variable_properties"));
+                            variable.maybe_properties = Some(
+                                Self::parse_properties(properties)
+                                    .expect("could not parse variable_properties"),
+                            );
                         }
                     }
                     Rule::variable_properties => {
-                        variable.maybe_properties =
-                            Some(Self::parse_properties(initial_value_or_properties).expect("could not parse variable_properties"));
+                        variable.maybe_properties = Some(
+                            Self::parse_properties(initial_value_or_properties)
+                                .expect("could not parse variable_properties"),
+                        );
                     }
                     _ => unreachable!(),
                 }
@@ -69,7 +73,9 @@ impl Variable {
         if let Rule::variable_properties = pair.as_rule() {
             Some(
                 pair.into_inner()
-                    .map(|pair| VariableProperty::parse(pair).expect("could not parse variable_property"))
+                    .map(|pair| {
+                        VariableProperty::parse(pair).expect("could not parse variable_property")
+                    })
                     .collect(),
             )
         } else {

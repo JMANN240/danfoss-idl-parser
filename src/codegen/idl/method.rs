@@ -197,7 +197,6 @@ impl MethodDefiner for XClassVariableGetMethodDefinition {
                 #shared_field_identifier.#identifier
             }
         } else {
-
             quote! {
                 #self_instance_assignment;
                 #self_instance_identifier.#identifier
@@ -288,7 +287,6 @@ impl MethodDefiner for XClassVariableSetMethodDefinition {
                 #shared_field_identifier.#identifier = #identifier;
             }
         } else {
-
             quote! {
                 #self_instance_assignment;
                 #self_instance_identifier.#identifier = #identifier;

@@ -132,10 +132,6 @@ pub trait StaticAssigner {
     fn value_tokens(&self) -> impl ToTokens;
 
     fn to_static_assignment(&self) -> StaticAssignment {
-        StaticAssignment::new(
-            self.identifier(),
-            self.type_tokens(),
-            self.value_tokens(),
-        )
+        StaticAssignment::new(self.identifier(), self.type_tokens(), self.value_tokens())
     }
 }

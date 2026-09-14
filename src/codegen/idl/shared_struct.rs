@@ -1,3 +1,4 @@
+use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::Ident;
 
@@ -76,8 +77,12 @@ impl StructDefiner for SharedStruct {
         self.type_identifier()
     }
 
-    fn fields(&self) -> Vec<StructFieldDefinition> {
-        self.struct_field_definitions().collect()
+    fn field_tokens(&self) -> TokenStream {
+        let struct_field_definitions = self.struct_field_definitions().collect::<Vec<_>>();
+
+        quote! {
+            #(#struct_field_definitions),*
+        }
     }
 }
 

@@ -36,7 +36,9 @@ impl Insert {
         if let Rule::insert_properties = pair.as_rule() {
             Some(
                 pair.into_inner()
-                    .map(|pair| InsertProperty::parse(pair).expect("coult not parse insert property"))
+                    .map(|pair| {
+                        InsertProperty::parse(pair).expect("coult not parse insert property")
+                    })
                     .collect(),
             )
         } else {
@@ -72,7 +74,10 @@ impl InsertProperty {
         if let Rule::insert_property = pair.as_rule() {
             let mut pairs = pair.into_inner();
 
-            let name = pairs.next().expect("insert_property always has name").to_string();
+            let name = pairs
+                .next()
+                .expect("insert_property always has name")
+                .to_string();
             let value = pairs
                 .next()
                 .expect("insert_property always has string")

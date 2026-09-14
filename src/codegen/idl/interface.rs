@@ -5,6 +5,7 @@ use crate::{
     ast::{Interface, InterfaceElement, xclass::XClass},
     codegen::{
         idl::{
+            alien_struct::AlienStruct,
             instance_struct::InstanceStruct,
             method::{
                 XClassMethodDefinition, XClassPropertyMethodDefinition,
@@ -183,6 +184,11 @@ impl ToTokens for XClassDefinition {
         let instance_struct_definition =
             InstanceStruct::new(self.idl_checksum(), self.xclass().clone()).to_struct_definition();
 
+        let maybe_alien_struct_definition = self
+            .xclass()
+            .has_verbatims()
+            .then(|| AlienStruct::new(self.xclass().clone()).to_struct_definition());
+
         let xclass_property_method_definitions = self.property_method_definitions();
 
         let xclass_variable_method_definitions = self.variable_method_definitions();
@@ -197,6 +203,8 @@ impl ToTokens for XClassDefinition {
             #shared_struct_static_assignment
 
             #instance_struct_definition
+
+            #maybe_alien_struct_definition
 
             #(#xclass_property_method_definitions)*
 

@@ -31,6 +31,5 @@ Thus, `danfoss-idl-parser` was born. Take in a `.idl` file, get matching Rust co
 
 ## Unsupported IDL Features
 
-- XClass Verbatim Elements
 - XClass Method Variables
 - Insert Elements

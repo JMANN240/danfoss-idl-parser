@@ -1,10 +1,11 @@
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
 
 use crate::{
     ast::xclass::XClass,
     codegen::{
-        idl::shared_struct::SharedStruct,
+        idl::{alien_struct::AlienStruct, shared_struct::SharedStruct},
         rust::definition::{StructDefiner, StructFieldDefiner, StructFieldDefinition},
     },
 };
@@ -33,6 +34,10 @@ impl InstanceStruct {
     pub fn shared_field_identifier() -> Ident {
         format_ident!("shared")
     }
+
+    pub fn alien_field_identifier() -> Ident {
+        format_ident!("alien")
+    }
 }
 
 impl StructDefiner for InstanceStruct {
@@ -40,12 +45,16 @@ impl StructDefiner for InstanceStruct {
         self.xclass().identifier().clone()
     }
 
-    fn fields(&self) -> Vec<StructFieldDefinition> {
+    fn field_tokens(&self) -> TokenStream {
         let shared_struct = SharedStruct::new(self.idl_checksum(), self.xclass().clone());
 
         let shared_struct_type_identifier = shared_struct.type_identifier();
 
-        [
+        let alien_struct = AlienStruct::new(self.xclass().clone());
+
+        let alien_struct_type_identifier = alien_struct.type_identifier();
+
+        let struct_field_definitions = [
             StructFieldDefinition::new(format_ident!("reserved"), quote! { u32 }),
             StructFieldDefinition::new(
                 Self::shared_field_identifier(),
@@ -58,6 +67,18 @@ impl StructDefiner for InstanceStruct {
                 .instance_variables()
                 .map(StructFieldDefiner::to_struct_field_definition),
         )
-        .collect::<Vec<_>>()
+        .chain(
+            self.xclass()
+                .has_verbatims()
+                .then_some(StructFieldDefinition::new(
+                    Self::alien_field_identifier(),
+                    quote! { #alien_struct_type_identifier },
+                )),
+        )
+        .collect::<Vec<_>>();
+
+        quote! {
+            #(#struct_field_definitions),*
+        }
     }
 }

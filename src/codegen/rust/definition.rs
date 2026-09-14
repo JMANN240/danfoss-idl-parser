@@ -4,32 +4,35 @@ use syn::Ident;
 
 pub struct StructDefinition {
     identifier: Ident,
-    fields: Vec<StructFieldDefinition>,
+    field_tokens: TokenStream,
 }
 
 impl StructDefinition {
-    pub fn new(identifier: Ident, fields: Vec<StructFieldDefinition>) -> Self {
-        Self { identifier, fields }
+    pub fn new(identifier: Ident, field_tokens: TokenStream) -> Self {
+        Self {
+            identifier,
+            field_tokens,
+        }
     }
 
     pub fn identifier(&self) -> &Ident {
         &self.identifier
     }
 
-    pub fn fields(&self) -> &Vec<StructFieldDefinition> {
-        &self.fields
+    pub fn field_tokens(&self) -> &TokenStream {
+        &self.field_tokens
     }
 }
 
 impl ToTokens for StructDefinition {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let identifier = self.identifier();
-        let fields = self.fields();
+        let field_tokens = self.field_tokens();
 
         tokens.extend(quote! {
             #[repr(C)]
             pub struct #identifier {
-                #(#fields),*
+                #field_tokens
             }
         });
     }
@@ -37,10 +40,10 @@ impl ToTokens for StructDefinition {
 
 pub trait StructDefiner {
     fn identifier(&self) -> Ident;
-    fn fields(&self) -> Vec<StructFieldDefinition>;
+    fn field_tokens(&self) -> TokenStream;
 
     fn to_struct_definition(&self) -> StructDefinition {
-        StructDefinition::new(self.identifier(), self.fields())
+        StructDefinition::new(self.identifier(), self.field_tokens())
     }
 }
 

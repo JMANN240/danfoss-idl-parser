@@ -165,6 +165,20 @@ impl XClass {
     pub fn instance_variables(&self) -> impl Iterator<Item = &Variable> {
         self.variables().filter(|variable| !variable.is_shared())
     }
+
+    pub fn verbatims(&self) -> impl Iterator<Item = &Verbatim> {
+        self.elements().iter().filter_map(|xclass_element| {
+            if let XClassElement::Verbatim(verbatim) = xclass_element {
+                Some(verbatim)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn has_verbatims(&self) -> bool {
+        self.verbatims().peekable().peek().is_some()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -252,7 +266,7 @@ impl XClassElement {
         match pair.as_rule() {
             Rule::method => Method::parse(pair).map(Self::Method),
             Rule::variable => Variable::parse(pair).map(Self::Variable),
-            Rule::verbatim => unimplemented!("xclass verbatim elements are not implemented"), // Verbatim::parse(pair).map(Self::Verbatim),
+            Rule::verbatim => Verbatim::parse(pair).map(Self::Verbatim),
             _ => None,
         }
     }

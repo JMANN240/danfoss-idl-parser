@@ -9,7 +9,7 @@ use crate::{
     Rule,
     ast::{common::Verbatim, xclass::VariableType},
     codegen::rust::{
-        definition::{ArgumentDefiner, StructDefiner, StructFieldDefiner, StructFieldDefinition},
+        definition::{ArgumentDefiner, StructDefiner, StructFieldDefiner},
         instantiation::{StructFieldInstantiator, StructInstantiator},
     },
 };
@@ -142,10 +142,15 @@ impl StructDefiner for Method {
         format_ident!("{}_OUT_ARGUMENTS_TYPE", self.identifier())
     }
 
-    fn fields(&self) -> Vec<StructFieldDefinition> {
-        self.out_arguments()
+    fn field_tokens(&self) -> TokenStream {
+        let struct_field_definitions = self
+            .out_arguments()
             .map(StructFieldDefiner::to_struct_field_definition)
-            .collect()
+            .collect::<Vec<_>>();
+
+        quote! {
+            #(#struct_field_definitions),*
+        }
     }
 }
 

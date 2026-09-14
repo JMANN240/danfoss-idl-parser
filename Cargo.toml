@@ -2,18 +2,18 @@
 name = "danfoss-idl-parser"
 description = "A parsing and codegen utility library for Danfoss IDL files."
 license = "MIT OR Apache-2.0"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [dependencies]
 capitalize = "0.3.4"
 heck = "0.5.0"
-pest = "2.9.0"
-pest_derive = "2.9.0"
+pest = "2.9.1"
+pest_derive = "2.9.1"
 proc-macro2 = "1.0.107"
 quote = "1.0.47"
 strum = { version = "0.28.0", features = ["derive"] }
-syn = { version = "3.0.3", features = ["full", "extra-traits"] }
+syn = { version = "3.0.5", features = ["full", "extra-traits"] }
 
 [dev-dependencies]
 claims = "0.8.0"
